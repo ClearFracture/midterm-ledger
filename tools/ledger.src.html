@@ -1,0 +1,819 @@
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&display=swap">
+<style>
+/* Layout: a newsroom ledger. Thesis and three figures, then the explorer (tile map + time scrubber beside a race sheet),
+   then the shared-miss scatter and convergence chart, the wallet section, the full table, and method notes. */
+:root {
+  --paper: #f3f4f7;
+  --surface: #fdfdfe;
+  --ink: #14171c;
+  --ink-2: #4b525d;
+  --muted: #737a86;
+  --rule: #e1e4e9;
+  --axis: #c2c7cf;
+  --tile-empty: #e8eaee;
+  --tile-empty-ink: #9aa0aa;
+  /* diverging: Dem-aligned (blue) <-> Republican (red), neutral grey midpoint */
+  --d1: #bcd1f2; --d2: #6f9fe4; --d3: #2a62c2;
+  --r1: #f2c3bd; --r2: #e27c71; --r3: #bd372f;
+  --mid: #dfe2e7;
+  --lab-1: #14171c; --lab-2: #14171c; --lab-3: #ffffff; --lab-mid: #14171c;
+  /* series identity (not party): Polymarket, poll-implied model */
+  --poly: #6250d6; --implied: #eda100;
+  /* ordinal: wallet size cohorts, small -> large */
+  --c1: #b3a9f0; --c2: #8a7ce6; --c3: #6250d6; --c4: #3d2ea6;
+  --on-c1: #14171c; --on-c2: #14171c; --on-c3: #ffffff; --on-c4: #ffffff;
+  --beat: rgba(42, 98, 194, 0.07);
+  --focus: #2a62c2;
+  --chip-bg: #e9ecf1;
+  --f-display: "Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --f-body: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --f-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --paper: #0f1114; --surface: #161a1f; --ink: #eceff3; --ink-2: #b3bac4; --muted: #8a919c; --rule: #262b32; --axis: #3a414b;
+    --tile-empty: #1d2228; --tile-empty-ink: #5b626d;
+    --d1: #2c4371; --d2: #3d6fc4; --d3: #79a8f3; --r1: #6b3431; --r2: #b9473e; --r3: #f08a7f; --mid: #2c3138;
+    --lab-1: #eceff3; --lab-2: #ffffff; --lab-3: #0f1114; --lab-mid: #eceff3;
+    --poly: #9085e9; --implied: #c98500;
+    --c1: #4c41a8; --c2: #6a5dd6; --c3: #9087f0; --c4: #c2bbfa;
+    --on-c1: #ffffff; --on-c2: #ffffff; --on-c3: #0f1114; --on-c4: #0f1114;
+    --beat: rgba(121, 168, 243, 0.08); --focus: #79a8f3; --chip-bg: #222831;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --paper: #0f1114; --surface: #161a1f; --ink: #eceff3; --ink-2: #b3bac4; --muted: #8a919c; --rule: #262b32; --axis: #3a414b;
+  --tile-empty: #1d2228; --tile-empty-ink: #5b626d;
+  --d1: #2c4371; --d2: #3d6fc4; --d3: #79a8f3; --r1: #6b3431; --r2: #b9473e; --r3: #f08a7f; --mid: #2c3138;
+  --lab-1: #eceff3; --lab-2: #ffffff; --lab-3: #0f1114; --lab-mid: #eceff3;
+  --poly: #9085e9; --implied: #c98500;
+  --c1: #4c41a8; --c2: #6a5dd6; --c3: #9087f0; --c4: #c2bbfa;
+  --on-c1: #ffffff; --on-c2: #ffffff; --on-c3: #0f1114; --on-c4: #0f1114;
+  --beat: rgba(121, 168, 243, 0.08); --focus: #79a8f3; --chip-bg: #222831;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+body { background: var(--paper); color: var(--ink); font: 400 15px/1.55 var(--f-body); }
+.wrap { max-width: 1180px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 36px 72px; display: grid; gap: 56px; }
+h1, h2, h3 { font-family: var(--f-display); text-wrap: balance; margin: 0; letter-spacing: -0.01em; }
+h1 { font-size: clamp(30px, 5.2vw, 52px); line-height: 1.04; font-weight: 800; max-width: 18ch; }
+h2 { font-size: clamp(22px, 3vw, 30px); line-height: 1.15; font-weight: 800; }
+h3 { font-size: 20px; line-height: 1.2; font-weight: 600; }
+p { margin: 0; max-width: 68ch; }
+.eyebrow { font: 500 12px/1.3 var(--f-mono); letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
+.dek { font-size: 17px; color: var(--ink-2); }
+.credits { font-size: 13px; color: var(--muted); }
+.credits a, .notes a { color: inherit; text-decoration: underline; text-underline-offset: 2px; }
+.num { font-variant-numeric: tabular-nums; }
+button { font: inherit; color: inherit; }
+:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+
+/* header */
+header.top { display: grid; gap: 18px; }
+
+/* section heads */
+.sec { display: grid; gap: 20px; }
+.sec-head { display: grid; gap: 8px; }
+
+/* controls */
+.controls { display: flex; flex-wrap: wrap; gap: 14px 22px; align-items: end; padding: 14px 0; border-block: 1px solid var(--rule); }
+.ctl { display: grid; gap: 6px; }
+.ctl > .lbl { font: 500 11px/1 var(--f-mono); letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
+.seg { display: inline-flex; border: 1px solid var(--axis); border-radius: 6px; overflow: hidden; background: var(--surface); }
+.seg button { border: 0; background: transparent; padding: 6px 11px; font-size: 13px; cursor: pointer; color: var(--ink-2); }
+.seg button + button { border-left: 1px solid var(--axis); }
+.seg button[aria-pressed="true"] { background: var(--ink); color: var(--paper); }
+.seg button:hover:not([aria-pressed="true"]) { background: var(--chip-bg); }
+/* the date slider gets its own full-width row, matching the map and race sheet below */
+.scrub { display: grid; grid-template-columns: minmax(0, 1fr); gap: 6px; flex: 1 1 100%; min-width: 0; }
+input[type="range"] { width: 100%; margin: 0; accent-color: var(--ink); }
+.scrub-read { grid-column: 1 / -1; display: flex; flex-wrap: wrap; justify-content: space-between; gap: 4px 16px; font-size: 13px; color: var(--ink-2); }
+.scrub-read strong { color: var(--ink); font-weight: 600; }
+.scrub[data-off="true"] { opacity: 0.45; }
+
+/* explorer */
+/* row 1: the map across the full width, with its legend and the chamber odds beside it; row 2: the race sheet */
+.explorer { display: grid; grid-template-columns: minmax(0, 1fr); gap: 28px; }
+.mapcol { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); gap: 28px; align-items: center; min-width: 0; }
+.mapside { display: grid; gap: 18px; min-width: 0; }
+@media (max-width: 760px) { .mapcol { grid-template-columns: minmax(0, 1fr); gap: 14px; } }
+/* the two race charts sit side by side; subgrid keeps their titles, keys and plots on shared rows */
+.sheet-charts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); grid-template-rows: auto auto auto; gap: 10px 28px; }
+.sheet-charts > .sc { display: grid; grid-row: span 3; grid-template-rows: subgrid; gap: 10px; min-width: 0; }
+@media (max-width: 760px) { .sheet-charts { grid-template-columns: minmax(0, 1fr); grid-template-rows: none; row-gap: 24px; } .sheet-charts > .sc { grid-row: auto; grid-template-rows: none; } }
+.sheet-ctl { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; justify-content: space-between; border-top: 1px solid var(--rule); padding-top: 12px; }
+#map { width: 100%; min-width: 0; }
+#map svg { display: block; margin: 0 auto; max-width: 100%; }
+.tile { cursor: default; }
+.tile.has { cursor: pointer; }
+.tile rect.bg { stroke: var(--paper); stroke-width: 0; }
+.tile.sel rect.ring { fill: none; stroke: var(--ink); stroke-width: 2.5; }
+.tile:focus-visible { outline: none; }
+.tile:focus-visible rect.ring { fill: none; stroke: var(--focus); stroke-width: 3; }
+.tile text { font-family: var(--f-mono); pointer-events: none; }
+.f-none { fill: var(--tile-empty); } .t-none { fill: var(--tile-empty-ink); }
+.f-d1 { fill: var(--d1); } .f-d2 { fill: var(--d2); } .f-d3 { fill: var(--d3); }
+.f-r1 { fill: var(--r1); } .f-r2 { fill: var(--r2); } .f-r3 { fill: var(--r3); } .f-mid { fill: var(--mid); }
+.t-d1, .t-r1 { fill: var(--lab-1); } .t-d2, .t-r2 { fill: var(--lab-2); } .t-d3, .t-r3 { fill: var(--lab-3); } .t-mid { fill: var(--lab-mid); }
+.legend { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 12px; color: var(--ink-2); align-items: center; }
+.ramp { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 2px; width: 100%; }
+.ramp div { height: 10px; border-radius: 2px; }
+.ramp-labels { display: flex; justify-content: space-between; font: 500 11px/1.3 var(--f-mono); color: var(--muted); }
+.maplegend { display: grid; gap: 4px; }
+.maplegend .ttl { font-size: 12px; color: var(--ink-2); }
+.chambers { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.chamber { background: var(--surface); border: 1px solid var(--rule); border-radius: 8px; padding: 10px 12px; display: grid; gap: 2px; }
+.chamber .k { font-size: 12px; color: var(--muted); }
+.chamber .v { font-size: 20px; font-weight: 600; }
+.chamber .s { font-size: 12px; color: var(--ink-2); }
+
+/* race sheet */
+.sheet { background: var(--surface); border: 1px solid var(--rule); border-radius: 10px; padding: 20px; display: grid; gap: 16px; min-width: 0; }
+.sheet-head { display: grid; gap: 6px; }
+.chip { justify-self: start; display: inline-flex; gap: 8px; align-items: center; font-size: 13px; padding: 4px 10px; border-radius: 999px; background: var(--chip-bg); color: var(--ink); }
+.chip i { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+.sheet-figs { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; border-top: 1px solid var(--rule); padding-top: 12px; }
+@media (max-width: 520px) { .sheet-figs { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.sfig { display: grid; gap: 2px; min-width: 0; }
+.sfig .k { font-size: 12px; color: var(--muted); display: flex; align-items: center; gap: 6px; }
+.sfig .v { font-size: 22px; font-weight: 600; letter-spacing: -0.01em; }
+.sfig .s { font-size: 12px; color: var(--ink-2); }
+.sw { width: 14px; height: 3px; border-radius: 2px; display: inline-block; flex: none; }
+.chart-head { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px 16px; align-items: baseline; }
+.chart-title { font-weight: 600; font-size: 14px; }
+.chart-sub { font-size: 12px; color: var(--muted); }
+.chart { width: 100%; min-width: 0; position: relative; }
+.chart svg { display: block; overflow: visible; }
+.keyrow { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 12px; color: var(--ink-2); }
+.keyrow span { display: inline-flex; align-items: center; gap: 6px; }
+.keyrow .off { color: var(--muted); text-decoration: line-through; }
+.dotkey { width: 9px; height: 9px; border-radius: 50%; display: inline-block; }
+svg text { font-family: var(--f-mono); }
+.tick { fill: var(--muted); font-size: 11px; }
+.gl { stroke: var(--rule); stroke-width: 1; }
+.ax { stroke: var(--axis); stroke-width: 1; }
+.ln { fill: none; stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
+.s-poly { stroke: var(--poly); } .s-implied { stroke: var(--implied); stroke-width: 1.5; }
+.s-ink { stroke: var(--ink); } .fill-ink { fill: var(--ink); } .fill-surface { fill: var(--surface); }
+.lbl-ink { fill: var(--ink); font-size: 11px; } .lbl-2 { fill: var(--ink-2); font-size: 11px; } .lbl-muted { fill: var(--muted); font-size: 11px; }
+.cross { stroke: var(--ink-2); stroke-width: 1; }
+.sel-line { stroke: var(--ink); stroke-width: 1; opacity: 0.35; }
+.poll-dot { stroke: var(--surface); stroke-width: 2; fill: var(--ink-2); fill-opacity: 0.6; }
+.poll-dot.partisan { fill: var(--surface); stroke: var(--ink-2); stroke-width: 1.5; }
+.poll-dot.hot { fill: var(--ink); fill-opacity: 1; }
+.foot { font-size: 12px; color: var(--muted); }
+
+/* supporting charts */
+.duo { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 28px; align-items: stretch; }
+@media (max-width: 920px) { .duo { grid-template-columns: minmax(0, 1fr); } }
+/* paired panels share a height; each chart fills the space between its header and its note */
+.panel { background: var(--surface); border: 1px solid var(--rule); border-radius: 10px; padding: 18px; display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+.panel > .chart { flex: 1 1 auto; display: flex; align-items: center; }
+.pt { cursor: pointer; }
+.pt circle.m { stroke: var(--surface); stroke-width: 2; }
+.pt.sen circle.m { fill: var(--ink); }
+.pt.gov circle.m { fill: var(--surface); stroke: var(--ink); stroke-width: 2; }
+.pt:hover circle.m, .pt:focus-visible circle.m { stroke: var(--focus); stroke-width: 3; }
+.pt:focus-visible { outline: none; }
+.beat { fill: var(--beat); }
+.seg-bar rect { stroke: var(--surface); stroke-width: 2; }
+.c1 { fill: var(--c1); } .c2 { fill: var(--c2); } .c3 { fill: var(--c3); } .c4 { fill: var(--c4); }
+.bg-c1 { background: var(--c1); } .bg-c2 { background: var(--c2); } .bg-c3 { background: var(--c3); } .bg-c4 { background: var(--c4); }
+.on-c1 { fill: var(--on-c1); font-size: 11px; } .on-c2 { fill: var(--on-c2); font-size: 11px; } .on-c3 { fill: var(--on-c3); font-size: 11px; } .on-c4 { fill: var(--on-c4); font-size: 11px; }
+.strip-range { stroke: var(--axis); stroke-width: 2; stroke-linecap: round; }
+.strip-dot { stroke: var(--surface); stroke-width: 2; }
+
+/* notes */
+.notes { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px 40px; font-size: 14px; color: var(--ink-2); }
+.notes p { max-width: 60ch; }
+.notes strong { color: var(--ink); font-weight: 600; }
+@media (max-width: 760px) { .notes { grid-template-columns: minmax(0, 1fr); } }
+
+/* tooltip */
+.tip { position: fixed; z-index: 20; pointer-events: none; background: var(--ink); color: var(--paper); font-size: 12px; line-height: 1.45; padding: 8px 10px; border-radius: 6px; max-width: 260px; box-shadow: 0 4px 16px rgba(0,0,0,0.18); }
+.tip b { font-weight: 600; }
+.tip .row { display: flex; justify-content: space-between; gap: 14px; }
+.tip .sw { height: 3px; }
+@media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto !important; } }
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <div class="eyebrow">2026 midterms · Polls, prediction markets and results · Results as of Nov 5, 2026</div>
+    <h1>How prediction markets and polls stacked up in the 2026 midterms</h1>
+    <p class="dek">Daily Polymarket prices and poll averages, checked against the results in <span id="nraces">—</span> Senate and governor races.</p>
+    <p class="credits">Sources: market prices from <a href="https://polymarket.com">Polymarket</a>. Polls and results from <a href="https://en.wikipedia.org/">Wikipedia</a>, used under <a href="https://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</a>. Not affiliated with or endorsed by Polymarket.</p>
+  </header>
+
+  <section class="sec" aria-labelledby="explore-h">
+    <div class="sec-head">
+      <h2 id="explore-h">Race by race</h2>
+      <p class="dek">Pick a race on the map. Drag the slider to see what the markets and polls said on any day before the election.</p>
+    </div>
+    <div class="controls" role="group" aria-label="Map controls">
+      <div class="ctl"><span class="lbl" id="office-l">Office</span><div class="seg" id="office" role="group" aria-labelledby="office-l"></div></div>
+      <div class="ctl"><span class="lbl" id="metric-l">Color states by</span><div class="seg" id="metric" role="group" aria-labelledby="metric-l"></div></div>
+      <div class="ctl scrub" id="scrub">
+        <label class="lbl" for="day">Date</label>
+        <input id="day" type="range" min="1" max="240" step="1" value="240" aria-describedby="day-read">
+        <div class="scrub-read" id="day-read"></div>
+      </div>
+    </div>
+    <div class="explorer">
+      <div class="mapcol">
+        <div id="map" aria-label="Tile map of races"></div>
+        <div class="mapside">
+          <div class="maplegend" id="maplegend"></div>
+          <div class="chambers" id="chambers"></div>
+        </div>
+      </div>
+      <article class="sheet" id="sheet" aria-live="polite"></article>
+    </div>
+  </section>
+
+  <section class="sec" aria-labelledby="miss-h">
+    <div class="sec-head">
+      <h2 id="miss-h">One shared miss</h2>
+      <p class="dek">Democrats beat their poll average in most races, by similar amounts. Errors that move together make thirty races worth about two independent observations, so a well-calibrated forecast can still produce a night like this. One election cannot tell polls and markets apart.</p>
+    </div>
+    <div class="duo">
+      <div class="panel">
+        <div class="chart-head">
+          <div><div class="chart-title">Poll average vs. preliminary result</div><div class="chart-sub">Margin of the Democratic-aligned candidate, in points</div></div>
+          <div class="seg" id="horizon" role="group" aria-label="Poll average date"></div>
+        </div>
+        <div class="keyrow"><span><i class="dotkey" style="background:var(--ink)"></i>Senate</span><span><i class="dotkey" style="border:2px solid var(--ink);background:var(--surface)"></i>Governor</span><span>Above the line: Democrats beat the polls</span></div>
+        <div class="chart" id="scatter"></div>
+        <p class="foot" id="scatter-foot"></p>
+      </div>
+      <div class="panel">
+        <div class="chart-head"><div><div class="chart-title">Expected vs. actual Democratic win share</div><div class="chart-sub" id="conv-sub">The same races at every date</div></div></div>
+        <div class="keyrow" id="conv-key"></div>
+        <div class="chart" id="conv"></div>
+        <p class="foot" id="conv-foot"></p>
+      </div>
+    </div>
+  </section>
+
+  <section class="sec" aria-labelledby="wallet-h">
+    <div class="sec-head">
+      <h2 id="wallet-h">Who was trading</h2>
+      <p class="dek">On Polymarket, a few hundred wallets put up most of the money. Returns did not rise with wallet size. Small wallets won big where underdog Democrats won and lost where favorites won; the largest wallets mostly stayed near break-even.</p>
+    </div>
+    <div class="duo">
+      <div class="panel">
+        <div class="chart-head"><div><div class="chart-title">Wallets vs. dollars, by wallet size</div><div class="chart-sub" id="pool-sub"></div></div></div>
+        <div class="keyrow" id="cohort-key"></div>
+        <div class="chart" id="pooled"></div>
+        <p class="foot" id="pool-foot"></p>
+      </div>
+      <div class="panel">
+        <div class="chart-head"><div><div class="chart-title">Return on purchases, by wallet size</div><div class="chart-sub">What each size group's buys through Nov 2 returned at resolution</div></div></div>
+        <div class="chart" id="strip"></div>
+        <p class="foot">Each dot is one size group in one market; zero means the group broke even. The $10,000+ groups hold only a handful of wallets in some races, so single traders can swing them. Hover for counts.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="sec" aria-labelledby="notes-h">
+    <h2 id="notes-h">Method and sources</h2>
+    <div class="notes">
+      <p><strong>Which races.</strong> Every 2026 Senate and governor race with a resolved Polymarket market, a declared winner on Wikipedia, and at least five polls ending in the 30 days before the election as listed on Wikipedia on Nov 2. Races that qualify on polls but are still uncalled are shown and left out of every summary figure.</p>
+      <p><strong>Market prices.</strong> Daily prices from Polymarket's public price-history API, taken at midnight Eastern each day. "Democratic-aligned" means the Democrat, except in Nebraska and Montana, where the main challengers were independents Dan Osborn and Seth Bodnar; there the page uses Polymarket's "Will an independent win?" market. California's governor race was priced per candidate, so it uses the market for the Democratic nominee, Xavier Becerra, starting the day after the June 2 top-two primary. Ohio's and Florida's Senate races are special elections.</p>
+      <p><strong>Poll averages.</strong> Each average uses only the polls Wikipedia listed at the time, rebuilt from the page's revision history (snapshots at the end of each day 1, 7, 14, 21, 30, 45, 60 and 90 days out, then monthly). On a given day, the average takes each pollster's latest poll from the prior 21 days (45 if fewer than three pollsters). A poll that tested several matchups, as most did before the primaries, counts as the average across them, so no average uses hindsight about the nominee. Polls added to Wikipedia after the election are excluded. Polls tagged (R) or (D) on Wikipedia, a partisan lean or sponsor, are drawn hollow; bipartisan teams count as non-partisan.</p>
+      <p><strong>Poll-implied odds.</strong> The poll average converted to a win probability with a normal error of 6.5 points in the final week, rising to 9 points at 90 days out. That spread is an assumption, and the model assumes errors average zero. This year they averaged +3.5 points toward Democrats, so the model was off even though its overall error size was about right.</p>
+      <p><strong>Results.</strong> Vote shares and declared winners from each race's Wikipedia article, read on Nov 5, 2026, with the exact page revision recorded for every race. Shares are of all votes cast. These are unofficial counts and counting continues; where the article gives a share of the count reporting, each race shows it. They will be updated once states certify. Uncalled races are left out of every summary figure.</p>
+      <p><strong>License.</strong> Poll and result figures are adapted from Wikipedia and shared under <a href="https://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</a>. Market prices are shown for reference only and are not offered for reuse.</p>
+      <p><strong>Wallets.</strong> Polymarket's public trade feed lists the wallet on each side of every fill, makers and takers. The charts count purchases made through 11:59 pm ET on Nov 2 and value each at its purchase price against the final outcome. Later trades are excluded: including them makes large wallets look skilled, because they bought winners after results came in. A wallet is not a person, and one election's returns mostly reflect the shock itself.</p>
+      <p><strong>About this page.</strong> Belvedere Labs is not affiliated with or endorsed by Polymarket. This page is for information only. It is not investment or trading advice, and the figures may contain errors.</p>
+    </div>
+  </section>
+</div>
+<div class="tip" id="tip" hidden></div>
+
+<script id="ledger-data" type="application/json">__DATA__</script>
+<script>
+(function () {
+  const D = JSON.parse(document.getElementById('ledger-data').textContent);
+  const RACES = D.races;
+  const byId = Object.fromEntries(RACES.map((r) => [r.id, r]));
+  const ELECTION = Date.UTC(2026, 10, 3);
+  const DAYMS = 864e5;
+  const MAXH = 240;
+  const CHART_H = 320; // shared height for the paired summary charts
+  const RACE_H = 260; // shared height for the two race-sheet charts
+  const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const NS = 'http://www.w3.org/2000/svg';
+  const state = { office: 'Senate', metric: 'market', h: 1, race: 'SENATETX', win: 180, horizon: 1 };
+
+  const TILES = { AK: [0, 0], ME: [11, 0], VT: [10, 1], NH: [11, 1], WA: [1, 2], ID: [2, 2], MT: [3, 2], ND: [4, 2], MN: [5, 2], IL: [6, 2], WI: [7, 2], MI: [8, 2], NY: [9, 2], RI: [10, 2], MA: [11, 2], OR: [1, 3], NV: [2, 3], WY: [3, 3], SD: [4, 3], IA: [5, 3], IN: [6, 3], OH: [7, 3], PA: [8, 3], NJ: [9, 3], CT: [10, 3], CA: [1, 4], UT: [2, 4], CO: [3, 4], NE: [4, 4], MO: [5, 4], KY: [6, 4], WV: [7, 4], VA: [8, 4], MD: [9, 4], DE: [10, 4], AZ: [2, 5], NM: [3, 5], KS: [4, 5], AR: [5, 5], TN: [6, 5], NC: [7, 5], SC: [8, 5], OK: [4, 6], LA: [5, 6], MS: [6, 6], AL: [7, 6], GA: [8, 6], HI: [0, 7], TX: [4, 7], FL: [9, 7] };
+
+  // ---------- helpers
+  const $ = (s) => document.querySelector(s);
+  function S(tag, attrs, parent) { const e = document.createElementNS(NS, tag); for (const k in attrs || {}) e.setAttribute(k, attrs[k]); if (parent) parent.appendChild(e); return e; }
+  function H(tag, attrs, html) { const e = document.createElement(tag); for (const k in attrs || {}) e.setAttribute(k, attrs[k]); if (html !== undefined) e.innerHTML = html; return e; }
+  const at = (arr, h) => (arr && h >= 1 && h <= arr.length ? arr[h - 1] : null);
+  const pct = (p) => (p === null || p === undefined ? '—' : Math.round(p * 100) + '%');
+  const lead = (r) => (r && r.dParty === 'I' ? 'I' : 'D');
+  function mlab(m, L) { if (m === null || m === undefined) return '—'; if (Math.abs(m) < 0.05) return 'Even'; return (m > 0 ? (L || 'D') + '+' : 'R+') + Math.abs(m).toFixed(1); }
+  function mshort(m, L) { if (m === null || m === undefined) return ''; const a = Math.round(Math.abs(m)); if (a === 0) return 'Even'; return (m > 0 ? (L || 'D') : 'R') + '+' + a; }
+  const dateOf = (h) => new Date(ELECTION - h * DAYMS);
+  const fmtDate = (d, yr) => d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: yr ? 'numeric' : undefined, timeZone: 'UTC' });
+  const dayWords = (h) => (h === 1 ? 'The day before' : h + ' days before');
+  const big = (n) => (n >= 1e6 ? (n / 1e6).toFixed(n >= 1e7 ? 0 : 1) + 'M' : n >= 1e3 ? Math.round(n / 1e3) + 'K' : String(n));
+  const officeShort = (o) => (o === 'Senate' ? 'Sen.' : 'Gov.');
+  function escapeHtml(s) { return String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c])); }
+  function onResize(el, fn) { let w = 0; const ro = new ResizeObserver(() => { const nw = el.clientWidth; if (nw !== w) { w = nw; fn(); } }); ro.observe(el); }
+
+  // ---------- tooltip
+  const tip = $('#tip');
+  function showTip(html, ev) {
+    tip.innerHTML = html; tip.hidden = false;
+    const pad = 14, r = tip.getBoundingClientRect();
+    let x = ev.clientX + pad, y = ev.clientY + pad;
+    if (x + r.width > window.innerWidth - 8) x = ev.clientX - r.width - pad;
+    if (y + r.height > window.innerHeight - 8) y = ev.clientY - r.height - pad;
+    tip.style.left = Math.max(8, x) + 'px'; tip.style.top = Math.max(8, y) + 'px';
+  }
+  function tipAt(html, el) { const b = el.getBoundingClientRect(); showTip(html, { clientX: b.left + b.width / 2, clientY: b.top }); }
+  const hideTip = () => { tip.hidden = true; };
+
+  // ---------- color bins
+  function bin(metric, v) {
+    if (v === null || v === undefined) return 'none';
+    if (metric === 'market') return v >= 0.85 ? 'd3' : v >= 0.65 ? 'd2' : v > 0.55 ? 'd1' : v >= 0.45 ? 'mid' : v > 0.35 ? 'r1' : v > 0.15 ? 'r2' : 'r3';
+    return v >= 10 ? 'd3' : v >= 4 ? 'd2' : v > 1 ? 'd1' : v >= -1 ? 'mid' : v > -4 ? 'r1' : v > -10 ? 'r2' : 'r3';
+  }
+  const METRICS = {
+    market: { label: 'Market odds', title: 'Polymarket chance of a Democratic-aligned win', ends: ['R 85%+', 'Toss-up', 'D 85%+'], usesDay: true },
+    polls: { label: 'Poll average', title: 'Poll average margin', ends: ['R+10', 'Within 1', 'D+10'], usesDay: true },
+    result: { label: 'Result', title: 'Preliminary result margin', ends: ['R+10', 'Within 1', 'D+10'], usesDay: false },
+    miss: { label: 'Poll miss', title: 'Result minus poll average (positive: Democrats beat the polls)', ends: ['R beat polls by 10+', 'Within 1', 'D beat polls by 10+'], usesDay: true },
+  };
+  function metricValue(r, metric, h) {
+    if (metric === 'market') return at(r.market, h);
+    if (metric === 'polls') return at(r.avg, h);
+    if (metric === 'result') return r.result ? r.result.margin : null;
+    const a = at(r.avg, h); return r.result && a !== null ? r.result.margin - a : null;
+  }
+
+  // ---------- header
+  function renderHeader() { $('#nraces').textContent = `${D.summary.universe.length}`; }
+
+  // ---------- controls
+  function seg(container, items, get, set) {
+    container.innerHTML = '';
+    for (const [val, label] of items) {
+      const b = H('button', { type: 'button', 'aria-pressed': String(get() === val) }, label);
+      b.addEventListener('click', () => { set(val); });
+      container.appendChild(b);
+    }
+  }
+  function syncSeg(container, items, cur) { [...container.children].forEach((b, i) => b.setAttribute('aria-pressed', String(items[i][0] === cur))); }
+  const OFFICES = [['Senate', 'Senate'], ['Governor', 'Governor']];
+  const METRIC_ITEMS = Object.entries(METRICS).map(([k, v]) => [k, v.label]);
+  const HORIZONS = [[1, 'Day before'], [7, '7 days'], [30, '30 days'], [90, '90 days']];
+  const slider = $('#day');
+  slider.max = String(MAXH);
+  const sliderToH = () => MAXH + 1 - +slider.value;
+  function setH(h, from) { state.h = Math.max(1, Math.min(MAXH, h)); if (from !== 'slider') slider.value = String(MAXH + 1 - state.h); renderDay(); }
+
+  function setOffice(o) {
+    state.office = o; syncSeg($('#office'), OFFICES, o);
+    const cur = byId[state.race];
+    if (cur.office !== o) { const same = RACES.find((r) => r.office === o && r.st === cur.st); state.race = (same || RACES.find((r) => r.office === o)).id; }
+    renderMap(); renderSheet();
+  }
+  function setMetric(m) { state.metric = m; syncSeg($('#metric'), METRIC_ITEMS, m); renderMap(); renderLegend(); renderDayRead(); }
+  function selectRace(id, opts) {
+    const r = byId[id]; if (!r) return;
+    state.race = id;
+    if (r.office !== state.office) { state.office = r.office; syncSeg($('#office'), OFFICES, r.office); }
+    renderMap(); renderSheet(); renderScatter();
+    try { history.replaceState(null, '', '#' + id.toLowerCase()); } catch (e) {}
+    if (opts && opts.scroll) $('#sheet').scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth', block: 'start' });
+  }
+
+  slider.addEventListener('input', () => { setH(sliderToH(), 'slider'); });
+
+  function renderDayRead() {
+    const off = !METRICS[state.metric].usesDay;
+    $('#scrub').dataset.off = String(off);
+    const d = fmtDate(dateOf(state.h), true);
+    $('#day-read').innerHTML = off ? '<span>The result does not depend on the date. Pick another view to use the slider.</span>' : `<span><strong>${dayWords(state.h)}</strong> the election</span><span class="num">${d} close</span>`;
+  }
+  function renderDay() { renderDayRead(); renderMap(); renderChambers(); renderSheet(); }
+
+  // ---------- map
+  function renderMap() {
+    const box = $('#map'); const w = Math.max(280, box.clientWidth);
+    const cols = 12, rows = 8, gap = w < 480 ? 2 : 3;
+    const size = Math.min(60, Math.floor((w - gap * (cols - 1)) / cols));
+    const W = cols * size + gap * (cols - 1), Ht = rows * size + gap * (rows - 1);
+    box.innerHTML = '';
+    const svg = S('svg', { viewBox: `0 0 ${W} ${Ht}`, width: W, height: Ht, role: 'group', 'aria-label': `${state.office} races, colored by ${METRICS[state.metric].label.toLowerCase()}` }, box);
+    const raceBySt = {}; RACES.filter((r) => r.office === state.office).forEach((r) => { raceBySt[r.st] = r; });
+    const fsAbbr = Math.max(9, Math.round(size * 0.24)), fsVal = Math.max(8, Math.round(size * 0.2));
+    for (const [st, [c, rw]] of Object.entries(TILES)) {
+      const x = c * (size + gap), y = rw * (size + gap);
+      const r = raceBySt[st];
+      const g = S('g', { class: 'tile' + (r ? ' has' : '') + (r && r.id === state.race ? ' sel' : ''), transform: `translate(${x},${y})` }, svg);
+      const v = r ? metricValue(r, state.metric, state.h) : null;
+      const b = r ? bin(state.metric, v) : 'none';
+      S('rect', { class: 'bg f-' + b, width: size, height: size, rx: 4 }, g);
+      const t1 = S('text', { class: 't-' + b, x: size / 2, y: r && size >= 34 ? size * 0.44 : size * 0.58, 'text-anchor': 'middle', 'font-size': fsAbbr, 'font-weight': r ? 500 : 400 }, g); t1.textContent = st;
+      if (r) {
+        if (size >= 34) {
+          const lab = v === null ? '—' : state.metric === 'market' ? Math.round(v * 100) + '%' : state.metric === 'miss' ? (v > 0 ? '+' : v < 0 ? '−' : '') + Math.abs(v).toFixed(0) : mshort(v, lead(r));
+          const t2 = S('text', { class: 't-' + b, x: size / 2, y: size * 0.74, 'text-anchor': 'middle', 'font-size': fsVal }, g); t2.textContent = lab;
+        }
+        if (r.pending) S('circle', { cx: size - 6, cy: 6, r: 2.5, class: 't-' + b }, g);
+        S('rect', { class: 'ring', x: 1.25, y: 1.25, width: size - 2.5, height: size - 2.5, rx: 3.5, fill: 'none' }, g);
+        g.setAttribute('tabindex', '0'); g.setAttribute('role', 'button');
+        g.setAttribute('aria-pressed', String(r.id === state.race));
+        g.setAttribute('aria-label', `${r.stateName} ${r.office}: ${METRICS[state.metric].label} ${state.metric === 'market' ? pct(v) : mlab(v, lead(r))}${r.pending ? ', uncalled' : ''}`);
+        g.addEventListener('click', () => selectRace(r.id));
+        g.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); selectRace(r.id); } });
+        g.addEventListener('pointermove', (e) => showTip(tileTip(r), e));
+        g.addEventListener('pointerleave', hideTip);
+        g.addEventListener('focus', () => tipAt(tileTip(r), g));
+        g.addEventListener('blur', hideTip);
+      }
+    }
+  }
+  function tileTip(r) {
+    const h = state.h, L = lead(r);
+    const res = r.result ? mlab(r.result.margin, L) + (r.pending ? ' (uncalled)' : '') : '—';
+    return `<b>${escapeHtml(r.stateName)} ${r.office}</b><br>${escapeHtml(r.d)} v ${escapeHtml(r.r)}<br>` +
+      `<div class="row"><span>Polymarket, ${h === 1 ? 'day before' : h + 'd out'}</span><span>${pct(at(r.market, h))}</span></div>` +
+      `<div class="row"><span>Poll average</span><span>${mlab(at(r.avg, h), L)}</span></div>` +
+      `<div class="row"><span>Result</span><span>${res}</span></div>`;
+  }
+  function renderLegend() {
+    const m = METRICS[state.metric];
+    const bins = ['r3', 'r2', 'r1', 'mid', 'd1', 'd2', 'd3'];
+    $('#maplegend').innerHTML = `<div class="ttl">${m.title}</div><div class="ramp">${bins.map((b) => `<div style="background:var(--${b})"></div>`).join('')}</div>` +
+      `<div class="ramp-labels"><span>${m.ends[0]}</span><span>${m.ends[1]}</span><span>${m.ends[2]}</span></div>` +
+      `<div class="legend"><span>Small dot: uncalled race</span><span>Grey: no race tracked</span></div>`;
+  }
+  function renderChambers() {
+    const h = state.h, el = $('#chambers');
+    const c = D.chambers;
+    const card = (name, s, won) => `<div class="chamber"><span class="k">${name} control, Democrats</span><span class="v num">${pct(at(s.market, h))}</span><span class="s">Polymarket · ${won}</span></div>`;
+    el.innerHTML = card('Senate', c.senate, 'Democrats won') + card('House', c.house, 'Democrats won');
+  }
+
+  // ---------- race sheet
+  function renderSheet() {
+    const r = byId[state.race], h = state.h, L = lead(r);
+    const sheet = $('#sheet');
+    const winner = r.outcome === 1 ? r.d : r.outcome === 0 ? r.r : null;
+    const rep = r.result && r.result.eevp != null ? `, ${Math.round(r.result.eevp)}% reporting` : '';
+    const chip = r.pending
+      ? `<span class="chip"><i style="background:var(--muted)"></i>Uncalled · current count ${mlab(r.result && r.result.margin, L)}${rep}</span>`
+      : `<span class="chip"><i style="background:var(--${r.outcome === 1 ? 'd3' : 'r3'})"></i>${escapeHtml(winner)} won · ${mlab(r.result && r.result.margin, L)}${rep}</span>`;
+    const avg = at(r.avg, h), miss = r.result && avg !== null ? r.result.margin - avg : null;
+    const when = h === 1 ? 'Day before' : `${h} days out`;
+    sheet.innerHTML = `
+      <div class="sheet-head">
+        <div class="eyebrow">${escapeHtml(r.stateName)} · ${r.office}</div>
+        <h3>${escapeHtml(r.d)} (${r.dParty === 'DFL' ? 'DFL' : r.dParty}) v ${escapeHtml(r.r)} (R)</h3>
+        ${chip}
+      </div>
+      <div class="sheet-figs">
+        <div class="sfig"><span class="k"><i class="sw" style="background:var(--poly)"></i>Polymarket</span><span class="v num">${pct(at(r.market, h))}</span><span class="s">${at(r.market, h) === null && r.marketFrom ? 'Priced per candidate until ' + fmtDate(new Date(r.marketFrom + 'T00:00:00Z')) : when}</span></div>
+        <div class="sfig"><span class="k"><i class="sw" style="background:var(--implied)"></i>Poll-implied odds</span><span class="v num">${pct(at(r.implied, h))}</span><span class="s">${when}</span></div>
+        <div class="sfig"><span class="k">Poll average</span><span class="v num">${mlab(avg, L)}</span><span class="s">${when}</span></div>
+        <div class="sfig"><span class="k">Polls missed by</span><span class="v num">${miss === null ? '—' : Math.abs(miss).toFixed(1) + ' pts'}</span><span class="s">${miss === null ? '' : 'toward ' + escapeHtml(miss > 0 ? r.d : r.r).split(' ').slice(-1)[0]}${r.pending ? ' (count incomplete)' : ''}</span></div>
+      </div>
+      <div class="sheet-ctl">
+        <span class="chart-sub">Both charts show the same stretch of time</span>
+        <div class="seg" id="win" role="group" aria-label="Chart window"></div>
+      </div>
+      <div class="sheet-charts">
+        <div class="sc">
+          <div class="chart-head"><div><div class="chart-title">Chance of a ${L === 'I' ? 'Osborn' : 'Democratic'} win</div><div class="chart-sub">Daily close${r.pending ? '' : ', with the outcome at right'}</div></div></div>
+          <div class="keyrow"><span><i class="sw" style="background:var(--poly)"></i>Polymarket</span><span><i class="sw" style="background:var(--implied)"></i>Poll-implied (model)</span></div>
+          <div class="chart" id="probchart"></div>
+        </div>
+        <div class="sc">
+          <div class="chart-head"><div><div class="chart-title">Polls and the result</div><div class="chart-sub">Margin in points · every matchup polled, as listed on Wikipedia by Nov 2</div></div></div>
+          <div class="keyrow"><span><i class="dotkey" style="background:var(--ink-2);opacity:.7"></i>Poll</span><span><i class="dotkey" style="border:1.5px solid var(--ink-2)"></i>Partisan poll (Wikipedia tag)</span><span><i class="sw" style="background:var(--ink)"></i>Poll average</span></div>
+          <div class="chart" id="pollchart"></div>
+        </div>
+      </div>
+      <p class="foot">Polymarket: $${big(r.vol || 0)} traded on this race. Results: Wikipedia, unofficial.</p>`;
+    seg($('#win'), [[90, '90d'], [180, '6m'], [365, '1y']], () => state.win, (v) => { state.win = v; renderSheet(); });
+    renderProb($('#probchart'), r);
+    renderPolls($('#pollchart'), r);
+  }
+
+  function timeAxis(svg, x, y0, Wwin, innerW) {
+    let lastX = -999;
+    const minGap = 34;
+    for (let h = Wwin; h >= 1; h--) {
+      const d = dateOf(h);
+      if (d.getUTCDate() !== 1) continue;
+      const px = x(h);
+      if (px - lastX < minGap) continue;
+      lastX = px;
+      S('line', { class: 'gl', x1: px, x2: px, y1: y0, y2: y0 + 4 }, svg);
+      const t = S('text', { class: 'tick', x: px, y: y0 + 16, 'text-anchor': 'middle' }, svg);
+      t.textContent = d.getUTCMonth() === 0 ? "Jan '26" : d.toLocaleDateString('en-US', { month: 'short', timeZone: 'UTC' });
+    }
+  }
+  function pathFor(arr, x, y, Wwin) {
+    let d = '', pen = false;
+    for (let h = Wwin; h >= 1; h--) {
+      const v = at(arr, h);
+      if (v === null || v === undefined) { pen = false; continue; }
+      d += (pen ? 'L' : 'M') + x(h).toFixed(1) + ',' + y(v).toFixed(1); pen = true;
+    }
+    return d;
+  }
+
+  function renderProb(box, r) {
+    const w = Math.max(280, box.clientWidth), Ht = RACE_H;
+    const pad = { l: 38, r: 58, t: 12, b: 26 };
+    const iw = w - pad.l - pad.r, ih = Ht - pad.t - pad.b, Wwin = state.win;
+    const x = (h) => pad.l + ((Wwin - h) / (Wwin - 1)) * iw;
+    const y = (p) => pad.t + (1 - p) * ih;
+    box.innerHTML = '';
+    const svg = S('svg', { width: w, height: Ht, viewBox: `0 0 ${w} ${Ht}`, role: 'img', 'aria-label': `Chance of a win for ${r.d} over time` }, box);
+    for (const p of [0, 0.25, 0.5, 0.75, 1]) {
+      S('line', { class: p === 0.5 ? 'ax' : 'gl', x1: pad.l, x2: pad.l + iw, y1: y(p), y2: y(p) }, svg);
+      const t = S('text', { class: 'tick', x: pad.l - 6, y: y(p) + 4, 'text-anchor': 'end' }, svg); t.textContent = Math.round(p * 100) + '%';
+    }
+    timeAxis(svg, x, pad.t + ih, Wwin, iw);
+    const series = [['implied', r.implied], ['poly', r.market]];
+    for (const [k, arr] of series) if (arr) S('path', { class: 'ln s-' + k, d: pathFor(arr, x, y, Wwin) }, svg);
+    if (state.h <= Wwin) S('line', { class: 'sel-line', x1: x(state.h), x2: x(state.h), y1: pad.t, y2: pad.t + ih }, svg);
+    // outcome
+    const ox = pad.l + iw + 18;
+    if (!r.pending) {
+      const oy = y(r.outcome);
+      S('circle', { cx: ox, cy: oy, r: 5, class: 'fill-ink', stroke: 'var(--surface)', 'stroke-width': 2 }, svg);
+      const t = S('text', { class: 'lbl-ink', x: ox, y: r.outcome ? oy + 18 : oy - 10, 'text-anchor': 'middle' }, svg); t.textContent = r.outcome ? 'Won' : 'Lost';
+    } else {
+      const t = S('text', { class: 'lbl-muted', x: ox, y: y(0.5) + 4, 'text-anchor': 'middle' }, svg); t.textContent = 'Open';
+    }
+    // hover
+    const hov = S('g', {}, svg);
+    const hit = S('rect', { x: pad.l, y: pad.t, width: iw, height: ih, fill: 'transparent' }, svg);
+    const move = (e) => {
+      const b = svg.getBoundingClientRect();
+      const px = e.clientX - b.left;
+      const h = Math.max(1, Math.min(Wwin, Math.round(Wwin - ((px - pad.l) / iw) * (Wwin - 1))));
+      hov.innerHTML = '';
+      S('line', { class: 'cross', x1: x(h), x2: x(h), y1: pad.t, y2: pad.t + ih }, hov);
+      let rows = '';
+      for (const [k, arr, name] of [['poly', r.market, 'Polymarket'], ['implied', r.implied, 'Poll-implied']]) {
+        const v = at(arr, h);
+        if (v === null || v === undefined) continue;
+        S('circle', { cx: x(h), cy: y(v), r: 4, fill: `var(--${k})`, stroke: 'var(--surface)', 'stroke-width': 2 }, hov);
+        rows += `<div class="row"><span><i class="sw" style="background:var(--${k})"></i> ${name}</span><span>${pct(v)}</span></div>`;
+      }
+      showTip(`<b>${fmtDate(dateOf(h), true)}</b> · ${h === 1 ? 'day before' : h + ' days out'}${rows}`, e);
+    };
+    hit.addEventListener('pointermove', move);
+    hit.addEventListener('pointerleave', () => { hov.innerHTML = ''; hideTip(); });
+  }
+
+  function renderPolls(box, r) {
+    const w = Math.max(280, box.clientWidth), Ht = RACE_H;
+    const pad = { l: 38, r: 58, t: 12, b: 26 };
+    const iw = w - pad.l - pad.r, ih = Ht - pad.t - pad.b, Wwin = state.win, L = lead(r);
+    const x = (h) => pad.l + ((Wwin - h) / (Wwin - 1)) * iw;
+    const polls = r.polls.map((p) => ({ ...p, h: Math.round((ELECTION - Date.parse(p.e + 'T00:00:00Z')) / DAYMS) })).filter((p) => p.h >= 1 && p.h <= Wwin);
+    const vals = polls.map((p) => p.m);
+    for (let h = 1; h <= Wwin; h++) { const a = at(r.avg, h); if (a !== null) vals.push(a); }
+    if (r.result) vals.push(r.result.margin);
+    let lo = Math.min(-2, ...vals), hi = Math.max(2, ...vals);
+    const stepv = hi - lo > 36 ? 10 : 5;
+    lo = Math.floor((lo - 1) / stepv) * stepv; hi = Math.ceil((hi + 1) / stepv) * stepv;
+    const y = (m) => pad.t + ((hi - m) / (hi - lo)) * ih;
+    box.innerHTML = '';
+    const svg = S('svg', { width: w, height: Ht, viewBox: `0 0 ${w} ${Ht}`, role: 'img', 'aria-label': `Polls for ${r.stateName} ${r.office}` }, box);
+    for (let m = lo; m <= hi; m += stepv) {
+      S('line', { class: m === 0 ? 'ax' : 'gl', x1: pad.l, x2: pad.l + iw, y1: y(m), y2: y(m) }, svg);
+      const t = S('text', { class: 'tick', x: pad.l - 6, y: y(m) + 4, 'text-anchor': 'end' }, svg); t.textContent = m === 0 ? 'Even' : (m > 0 ? L : 'R') + '+' + Math.abs(m);
+    }
+    timeAxis(svg, x, pad.t + ih, Wwin, iw);
+    if (r.result) {
+      const ry = y(r.result.margin);
+      S('line', { class: 's-ink', x1: pad.l, x2: pad.l + iw + 6, y1: ry, y2: ry, 'stroke-width': 1, opacity: 0.8 }, svg);
+      const t1 = S('text', { class: 'lbl-ink', x: pad.l + iw + 10, y: ry - 2 }, svg); t1.textContent = r.pending ? 'Count' : 'Result';
+      const t2 = S('text', { class: 'lbl-2', x: pad.l + iw + 10, y: ry + 11 }, svg); t2.textContent = mshort(r.result.margin, L);
+    }
+    const dots = S('g', {}, svg);
+    const pts = polls.map((p) => { const c = S('circle', { class: 'poll-dot' + (p.pt ? ' partisan' : ''), cx: x(p.h), cy: y(p.m), r: 3.5 }, dots); return { p, c, cx: x(p.h), cy: y(p.m) }; });
+    S('path', { class: 'ln s-ink', d: pathFor(r.avg, x, y, Wwin) }, svg);
+    if (state.h <= Wwin) S('line', { class: 'sel-line', x1: x(state.h), x2: x(state.h), y1: pad.t, y2: pad.t + ih }, svg);
+    let hot = null;
+    const hit = S('rect', { x: pad.l, y: pad.t, width: iw, height: ih, fill: 'transparent' }, svg);
+    hit.addEventListener('pointermove', (e) => {
+      const b = svg.getBoundingClientRect(); const px = e.clientX - b.left, py = e.clientY - b.top;
+      let best = null, bd = 18 * 18;
+      for (const q of pts) { const d = (q.cx - px) ** 2 + (q.cy - py) ** 2; if (d < bd) { bd = d; best = q; } }
+      if (hot) hot.c.classList.remove('hot');
+      hot = best;
+      if (best) {
+        best.c.classList.add('hot');
+        const p = best.p;
+        showTip(`<b>${escapeHtml(p.s)}</b><br>Ended ${fmtDate(new Date(p.e + 'T00:00:00Z'), true)}<br>${escapeHtml(p.mu)}: ${mlab(p.m, L)}${p.n ? ` · ${p.n.toLocaleString()} ${p.pop || ''}` : ''}${p.pt ? `<br>Tagged (${p.pt}) on Wikipedia: partisan lean or sponsor` : ''}`, e);
+      } else {
+        const h = Math.max(1, Math.min(Wwin, Math.round(Wwin - ((px - pad.l) / iw) * (Wwin - 1))));
+        const a = at(r.avg, h);
+        if (a !== null) showTip(`<b>${fmtDate(dateOf(h), true)}</b><br>Poll average ${mlab(a, L)}`, e); else hideTip();
+      }
+    });
+    hit.addEventListener('pointerleave', () => { if (hot) hot.c.classList.remove('hot'); hot = null; hideTip(); });
+  }
+
+  // ---------- scatter
+  function renderScatter() {
+    const box = $('#scatter'); const h = state.horizon;
+    const rows = RACES.filter((r) => !r.pending && r.result && at(r.avg, h) !== null).map((r) => ({ r, xv: at(r.avg, h), yv: r.result.margin }));
+    const side = Math.max(280, box.clientWidth), Ht = CHART_H;
+    const pad = { l: 44, r: 14, t: 12, b: 34 };
+    const iw = side - pad.l - pad.r, ih = Ht - pad.t - pad.b;
+    const allv = rows.flatMap((q) => [q.xv, q.yv]);
+    const step = Math.max(...allv) - Math.min(...allv) > 30 || side < 400 ? 10 : 5;
+    const lo = Math.floor((Math.min(...allv) - 1) / step) * step, hi = Math.ceil((Math.max(...allv) + 1) / step) * step;
+    const x = (v) => pad.l + ((v - lo) / (hi - lo)) * iw;
+    const y = (v) => pad.t + ((hi - v) / (hi - lo)) * ih;
+    box.innerHTML = '';
+    const svg = S('svg', { width: side, height: Ht, viewBox: `0 0 ${side} ${Ht}`, role: 'img', 'aria-label': 'Scatter of poll average against result margin' }, box);
+    S('path', { class: 'beat', d: `M${x(lo)},${y(lo)}L${x(hi)},${y(hi)}L${x(lo)},${y(hi)}Z` }, svg);
+    for (let v = lo; v <= hi; v += step) {
+      S('line', { class: v === 0 ? 'ax' : 'gl', x1: pad.l, x2: pad.l + iw, y1: y(v), y2: y(v) }, svg);
+      S('line', { class: v === 0 ? 'ax' : 'gl', y1: pad.t, y2: pad.t + ih, x1: x(v), x2: x(v) }, svg);
+      const lab = v === 0 ? 'Even' : (v > 0 ? 'D+' : 'R+') + Math.abs(v);
+      if (v > lo) { const ty = S('text', { class: 'tick', x: pad.l - 6, y: y(v) + 4, 'text-anchor': 'end' }, svg); ty.textContent = lab; }
+      const tx = S('text', { class: 'tick', x: x(v), y: pad.t + ih + 16, 'text-anchor': 'middle' }, svg); tx.textContent = lab;
+    }
+    S('line', { class: 's-ink', x1: x(lo), y1: y(lo), x2: x(hi), y2: y(hi), 'stroke-width': 1, opacity: 0.5 }, svg);
+    if (side >= 400) { const ta = S('text', { class: 'lbl-muted', x: x(hi) - 4, y: y(hi) + 14, 'text-anchor': 'end' }, svg); ta.textContent = 'Result = polls'; }
+    const ax1 = S('text', { class: 'lbl-2', x: pad.l + iw / 2, y: Ht - 2, 'text-anchor': 'middle' }, svg); ax1.textContent = `Poll average, ${h === 1 ? 'day before' : h + ' days out'} →`;
+    const ax2 = S('text', { class: 'lbl-2', x: pad.l + 4, y: pad.t + 12 }, svg); ax2.textContent = '↑ Result';
+    // labels for biggest misses and any race where Republicans beat polls
+    const ranked = [...rows].sort((a, b) => (b.yv - b.xv) - (a.yv - a.xv));
+    const labelIds = new Set([...ranked.slice(0, 3), ...ranked.filter((q) => q.yv - q.xv < 0).slice(-2)].map((q) => q.r.id));
+    for (const q of rows) {
+      const g = S('g', { class: 'pt ' + (q.r.office === 'Senate' ? 'sen' : 'gov'), tabindex: 0, role: 'button', 'aria-label': `${q.r.stateName} ${q.r.office}: poll ${mlab(q.xv, lead(q.r))}, result ${mlab(q.yv, lead(q.r))}` }, svg);
+      S('circle', { cx: x(q.xv), cy: y(q.yv), r: 12, fill: 'transparent' }, g);
+      S('circle', { class: 'm', cx: x(q.xv), cy: y(q.yv), r: q.r.id === state.race ? 7 : 5 }, g);
+      if (labelIds.has(q.r.id) || q.r.id === state.race) {
+        const right = x(q.xv) + 9 + 48 < pad.l + iw; // flip the label to the left near the right edge
+        const t = S('text', { class: 'lbl-ink', x: right ? x(q.xv) + 9 : x(q.xv) - 9, y: y(q.yv) + 4, 'text-anchor': right ? 'start' : 'end' }, g); t.textContent = `${q.r.st} ${officeShort(q.r.office)}`;
+      }
+      const tipHtml = `<b>${escapeHtml(q.r.stateName)} ${q.r.office}</b><br>Poll average ${mlab(q.xv, lead(q.r))}<br>Result ${mlab(q.yv, lead(q.r))}<br>Miss ${(q.yv - q.xv > 0 ? '+' : '') + (q.yv - q.xv).toFixed(1)} pts`;
+      g.addEventListener('pointermove', (e) => showTip(tipHtml, e));
+      g.addEventListener('pointerleave', hideTip);
+      g.addEventListener('focus', () => tipAt(tipHtml, g));
+      g.addEventListener('blur', hideTip);
+      g.addEventListener('click', () => selectRace(q.r.id, { scroll: true }));
+      g.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); selectRace(q.r.id, { scroll: true }); } });
+    }
+    // nudge overlapping point labels apart vertically
+    const labs = [...svg.querySelectorAll('.pt text')];
+    for (let i = 0; i < labs.length; i++) for (let j = 0; j < i; j++) {
+      const a = labs[i].getBBox(), b = labs[j].getBBox();
+      if (a.x < b.x + b.width && b.x < a.x + a.width && a.y < b.y + b.height && b.y < a.y + a.height) labs[i].setAttribute('y', +labs[i].getAttribute('y') + (a.y >= b.y ? 1 : -1) * (b.height + 1));
+    }
+    const s = D.summary.horizons[h];
+    $('#scatter-foot').textContent = `${s.beatPolls} of ${s.n} races above the line. Average miss ${s.pollMiss > 0 ? '+' : ''}${s.pollMiss.toFixed(1)} points toward Democrats. Uncalled races (${D.summary.pending.map((id) => { const p = byId[id]; return `${p.stateName} ${p.office === 'Senate' ? 'Senate' : 'governor'}`; }).join(', ')}) are not shown.`;
+  }
+
+  // ---------- convergence
+  function renderConv() {
+    const box = $('#conv'); const w = Math.max(280, box.clientWidth), Ht = CHART_H;
+    const pad = { l: 40, r: 124, t: 14, b: 30 };
+    const iw = w - pad.l - pad.r, ih = Ht - pad.t - pad.b;
+    const hs = [90, 30, 7, 1];
+    const x = (i) => pad.l + (i / (hs.length - 1)) * iw;
+    const lo = 0.4, hi = 1;
+    const y = (v) => pad.t + ((hi - v) / (hi - lo)) * ih;
+    box.innerHTML = '';
+    const svg = S('svg', { width: w, height: Ht, viewBox: `0 0 ${w} ${Ht}`, role: 'img', 'aria-label': 'Expected versus actual Democratic win share by date' }, box);
+    for (let v = 0.4; v <= 1.001; v += 0.1) {
+      S('line', { class: 'gl', x1: pad.l, x2: pad.l + iw, y1: y(v), y2: y(v) }, svg);
+      const t = S('text', { class: 'tick', x: pad.l - 6, y: y(v) + 4, 'text-anchor': 'end' }, svg); t.textContent = Math.round(v * 100) + '%';
+    }
+    const narrow = iw < 260;
+    hs.forEach((h, i) => { const t = S('text', { class: 'tick', x: x(i), y: pad.t + ih + 18, 'text-anchor': 'middle' }, svg); t.textContent = narrow ? h + 'd' : h === 1 ? 'Day before' : h + ' days'; });
+    // Hold the race set fixed: only races with both a poll average and a market price at all four checkpoints,
+    // so "Actual" is the same target at every date and only the forecasts move.
+    const fixed = RACES.filter((r) => !r.pending && r.outcome !== null && hs.every((h) => at(r.avg, h) !== null && at(r.market, h) !== null));
+    const meanAt = (key, h) => fixed.reduce((a, r) => a + at(r[key], h), 0) / fixed.length;
+    const SH = Object.fromEntries(hs.map((h) => [h, { n: fixed.length, actual: fixed.reduce((a, r) => a + r.outcome, 0) / fixed.length, marketExpected: meanAt('market', h), pollExpected: meanAt('implied', h) }]));
+    const series = [['actual', 'Actual', 'ink'], ['marketExpected', 'Polymarket', 'poly'], ['pollExpected', 'Poll-implied', 'implied']];
+    const ends = [];
+    for (const [k, name, color] of series) {
+      const d = hs.map((h, i) => (i ? 'L' : 'M') + x(i) + ',' + y(SH[h][k])).join('');
+      S('path', { class: 'ln', d, stroke: `var(--${color})`, 'stroke-width': k === 'actual' ? 1.5 : 2 }, svg);
+      hs.forEach((h, i) => {
+        const g = S('g', {}, svg);
+        S('circle', { cx: x(i), cy: y(SH[h][k]), r: 12, fill: 'transparent' }, g);
+        S('circle', { cx: x(i), cy: y(SH[h][k]), r: 4, fill: `var(--${color})`, stroke: 'var(--surface)', 'stroke-width': 2 }, g);
+        g.addEventListener('pointermove', (e) => showTip(`<b>${name}</b>, ${h === 1 ? 'day before' : h + ' days out'}<br>${pct(SH[h][k])} ${k === 'actual' ? 'of these races won by the Democratic-aligned candidate' : 'average Democratic win chance'}<br>Same ${SH[h].n} races at every date`, e));
+        g.addEventListener('pointerleave', hideTip);
+      });
+      ends.push({ name, v: SH[1][k], color });
+    }
+    // direct labels at right end, nudged apart
+    ends.sort((a, b) => b.v - a.v);
+    let lastY = -99;
+    for (const e of ends) { let ly = y(e.v) + 4; if (ly - lastY < 13) ly = lastY + 13; lastY = ly; const t = S('text', { class: 'lbl-ink', x: pad.l + iw + 10, y: ly }, svg); t.textContent = `${e.name} ${pct(e.v)}`; }
+    $('#conv-key').innerHTML = series.map(([, name, color]) => `<span><i class="sw" style="background:var(--${color})"></i>${name}</span>`).join('');
+    const F = D.summary.fullSet;
+    $('#conv-sub').textContent = `The same ${fixed.length} races at every date: those with a poll average and a market price 90, 30, 7 and 1 day out`;
+    $('#conv-foot').textContent = `Actual is the share of these ${fixed.length} races the Democratic-aligned candidate won, so it stays fixed. Both forecasts moved toward it but didn't get there. The gap between the two lines is within noise and depends on the assumed poll error. Across all ${F[1].n} resolved Polymarket Senate and governor markets, including safe seats with few polls, prices implied ${F[90].expected.toFixed(1)} Democratic-aligned wins 90 days out and ${F[1].expected.toFixed(1)} the day before; ${F[1].wins} happened.`;
+  }
+
+  // ---------- wallets
+  const COH = ['c1', 'c2', 'c3', 'c4'];
+  function renderPooled() {
+    const box = $('#pooled'); const P = D.summary.pooledWallets;
+    $('#pool-sub').textContent = `${P.totalWallets.toLocaleString()} wallet-market pairs across ${P.markets} markets, makers and takers, buys through Nov 2`;
+    $('#cohort-key').innerHTML = P.bins.map((b, i) => `<span><i class="dotkey bg-${COH[i]}"></i>${b.label}</span>`).join('');
+    const w = Math.max(280, box.clientWidth), barH = 44, Ht = 2 * barH + 46;
+    const pad = { l: 72, r: 8, t: 8 };
+    const iw = w - pad.l - pad.r;
+    box.innerHTML = '';
+    const svg = S('svg', { width: w, height: Ht, viewBox: `0 0 ${w} ${Ht}`, role: 'img', 'aria-label': 'Share of wallets and share of dollars by wallet size' }, box);
+    [['Wallets', 'walletShare'], ['Dollars', 'dollarShare']].forEach(([name, key], row) => {
+      const y0 = pad.t + row * (barH + 30);
+      const t = S('text', { class: 'lbl-ink', x: 0, y: y0 + barH / 2 + 4 }, svg); t.textContent = name;
+      let acc = 0;
+      const g = S('g', { class: 'seg-bar' }, svg);
+      P.bins.forEach((b, i) => {
+        const v = b[key], x0 = pad.l + acc * iw, ww = v * iw;
+        const rect = S('rect', { x: x0, y: y0, width: Math.max(0, ww), height: barH, rx: 3, class: COH[i] }, g);
+        rect.addEventListener('pointermove', (e) => showTip(`<b>${b.label} wallets</b><br>${pct(b.walletShare)} of wallets<br>${pct(b.dollarShare)} of dollars ($${big(b.usd)})`, e));
+        rect.addEventListener('pointerleave', hideTip);
+        if (ww > 40) { const lt = S('text', { class: 'on-' + COH[i], x: x0 + 8, y: y0 + barH / 2 + 4 }, svg); lt.textContent = pct(v); lt.style.pointerEvents = 'none'; }
+        acc += v;
+      });
+    });
+    const top = P.bins[3];
+    $('#pool-foot').textContent = `${pct(top.walletShare)} of wallets bought $10,000 or more and put up ${pct(top.dollarShare)} of the money; ${pct(P.bins[0].walletShare)} bought less than $100. Pooled return on purchases: ${P.bins.map((b) => `${b.label} ${sret(b.ret)}`).join(', ')}.`;
+  }
+  const sret = (v) => (v === null || v === undefined ? '—' : (v > 0 ? '+' : v < 0 ? '−' : '') + Math.abs(100 * v).toFixed(0) + '%');
+  function renderStrip() {
+    const box = $('#strip');
+    const rs = D.summary.walletMarkets;
+    const w = Math.max(280, box.clientWidth), rowH = 30, pad = { l: 104, r: 16, t: 8, b: 30 };
+    const Ht = pad.t + rs.length * rowH + pad.b, iw = w - pad.l - pad.r;
+    const all = rs.flatMap((m) => m.cohorts.map((c) => c.ret)).filter((v) => v !== null);
+    const lo = Math.min(-0.5, Math.floor(Math.min(...all) / 0.5) * 0.5), hi = Math.max(0.5, Math.ceil(Math.max(...all) / 0.5) * 0.5);
+    const x = (v) => pad.l + ((v - lo) / (hi - lo)) * iw;
+    box.innerHTML = '';
+    const svg = S('svg', { width: w, height: Ht, viewBox: `0 0 ${w} ${Ht}`, role: 'img', 'aria-label': 'Return on purchases by wallet size and market' }, box);
+    const ticks = []; for (let v = lo; v <= hi + 1e-9; v += 0.5) ticks.push(Math.round(v * 10) / 10);
+    for (const v of ticks) {
+      S('line', { class: v === 0 ? 'ax' : 'gl', x1: x(v), x2: x(v), y1: pad.t, y2: pad.t + rs.length * rowH }, svg);
+      const t = S('text', { class: 'tick', x: x(v), y: pad.t + rs.length * rowH + 16, 'text-anchor': 'middle' }, svg); t.textContent = v === 0 ? '0' : sret(v);
+    }
+    rs.forEach((m, i) => {
+      const cy = pad.t + i * rowH + rowH / 2;
+      const name = S('text', { class: 'lbl-ink', x: 0, y: cy + 4 }, svg); name.textContent = m.label;
+      const vals = m.cohorts.map((c) => c.ret).filter((v) => v !== null);
+      S('line', { class: 'strip-range', x1: x(Math.min(...vals)), x2: x(Math.max(...vals)), y1: cy, y2: cy }, svg);
+      m.cohorts.forEach((c, j) => {
+        if (c.ret === null) return;
+        const g = S('g', { tabindex: 0, role: 'img', 'aria-label': `${m.name}, ${c.label} wallets: return ${sret(c.ret)}, ${c.wallets} wallets` }, svg);
+        S('circle', { cx: x(c.ret), cy, r: 11, fill: 'transparent' }, g);
+        S('circle', { class: 'strip-dot ' + COH[j], cx: x(c.ret), cy, r: 5.5 }, g);
+        const html = `<b>${escapeHtml(m.name)}</b> · ${c.label} wallets<br>Return on purchases: ${sret(c.ret)}<br>${c.wallets.toLocaleString()} wallets · ${pct(c.dollarShare)} of dollars<br>${c.leanWinner === null ? '' : `${pct(c.leanWinner)} of ${c.sided} one-sided wallets leaned toward ${escapeHtml(m.winner)}`}`;
+        g.addEventListener('pointermove', (e) => showTip(html, e));
+        g.addEventListener('pointerleave', hideTip);
+        g.addEventListener('focus', () => tipAt(html, g));
+        g.addEventListener('blur', hideTip);
+        if (m.id) g.addEventListener('click', () => selectRace(m.id, { scroll: true }));
+      });
+    });
+  }
+
+  // ---------- boot
+  seg($('#office'), OFFICES, () => state.office, setOffice);
+  seg($('#metric'), METRIC_ITEMS, () => state.metric, setMetric);
+  seg($('#horizon'), HORIZONS, () => state.horizon, (v) => { state.horizon = v; syncSeg($('#horizon'), HORIZONS, v); renderScatter(); });
+  const fromHash = (location.hash || '').slice(1).toUpperCase();
+  if (byId[fromHash]) { state.race = fromHash; state.office = byId[fromHash].office; syncSeg($('#office'), OFFICES, state.office); }
+  window.addEventListener('hashchange', () => { const id = (location.hash || '').slice(1).toUpperCase(); if (byId[id] && id !== state.race) selectRace(id); });
+  setH(1);
+  renderHeader(); renderLegend(); renderScatter(); renderConv(); renderPooled(); renderStrip();
+  onResize($('#map'), renderMap);
+  onResize($('#sheet'), renderSheet);
+  onResize($('#scatter'), renderScatter);
+  onResize($('#conv'), renderConv);
+  onResize($('#pooled'), renderPooled);
+  onResize($('#strip'), renderStrip);
+  window.addEventListener('scroll', hideTip, { passive: true });
+})();
+</script>

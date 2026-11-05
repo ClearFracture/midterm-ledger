@@ -1,0 +1,7 @@
+# Pulled and intermediate data (hundreds of MB, includes raw Polymarket trades with wallet addresses). Never commit.
+raw/
+node_modules/
+.vercel/
+.env*
+.DS_Store
+Thumbs.db
