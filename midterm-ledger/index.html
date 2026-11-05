@@ -11,9 +11,10 @@
 <meta property="og:description" content="How prediction markets and polls stacked up in the 2026 US midterms: daily Polymarket prices and poll averages, checked against the results in Senate and governor races.">
 <meta property="og:url" content="https://www.belvederelabs.ai/midterm-ledger">
 <meta name="twitter:card" content="summary">
+<link rel="icon" href="https://www.belvederelabs.ai/belvedere.png" type="image/png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&family=Inter:wght@400;500;600&display=swap">
 <style>
 /* Layout: a newsroom ledger. Thesis and three figures, then the explorer (tile map + time scrubber beside a race sheet),
    then the shared-miss scatter and convergence chart, the wallet section, the full table, and method notes. */
@@ -212,11 +213,78 @@ svg text { font-family: var(--f-mono); }
 .tip .row { display: flex; justify-content: space-between; gap: 14px; }
 .tip .sw { height: 3px; }
 @media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto !important; } }
+/* Belvedere Labs site header, mirrored from the labs site, Outliers and Forecast Explorer: fixed
+   4rem navy bar, hairline, logo, links to the other Labs projects. Colors are fixed so it reads the
+   same in light and dark mode. The page is padded by the same 4rem. */
+html { scroll-padding-top: 4rem; }
+body { padding-top: 4rem; }
+.sh { position: fixed; left: 0; right: 0; top: 0; z-index: 40; font-family: Inter, ui-sans-serif, system-ui, sans-serif; line-height: 1.5; }
+.sh a { text-decoration: none; }
+.sh-bar { border-bottom: 1px solid #1a2d5a; background: rgba(8, 20, 52, .95); backdrop-filter: blur(4px); }
+.sh-in { margin: 0 auto; display: flex; height: 4rem; max-width: 80rem; align-items: center; justify-content: space-between; padding: 0 1rem; }
+@media (min-width: 640px) { .sh-in { padding: 0 1.5rem; } }
+@media (min-width: 1024px) { .sh-in { padding: 0 2rem; } }
+.sh-brand { display: flex; align-items: center; gap: .625rem; }
+.sh-brand img { height: 1.75rem; width: auto; user-select: none; display: block; }
+.sh-brand span { font-size: 15px; font-weight: 600; letter-spacing: -.01em; color: #f0f1f4; }
+.sh-links { display: none; align-items: center; gap: .25rem; }
+.sh-link { border-radius: .5rem; padding: .375rem .75rem; font-size: .875rem; color: #9ba4be; transition: background 300ms cubic-bezier(.4,0,.2,1), color 300ms cubic-bezier(.4,0,.2,1); }
+.sh-link:hover { background: #0d1c45; color: #f0f1f4; }
+.sh-link.on { color: #f0f1f4; }
+.sh-sheet .sh-link { display: block; padding: .625rem .75rem; }
+.sh-menu { border-radius: .5rem; padding: .5rem; color: #9ba4be; background: transparent; border: 0; cursor: pointer; display: inline-flex; }
+.sh-menu:hover { background: #0d1c45; color: #f0f1f4; }
+.sh-sheet { border-top: 1px solid #1a2d5a; background: #081434; padding: .75rem 1rem; }
+@media (min-width: 1024px) { .sh-links { display: flex; } .sh-menu, .sh-sheet { display: none; } }
+.byline { font-size: 13px; color: var(--muted); margin: 0; }
 </style>
 </head>
 <body>
 
 
+<header class="sh">
+  <nav class="sh-bar" aria-label="Belvedere Labs">
+    <div class="sh-in">
+      <a href="https://www.belvederelabs.ai" class="sh-brand">
+        <img src="https://www.belvederelabs.ai/belvedere.png" alt="" aria-hidden="true" draggable="false">
+        <span>Belvedere Labs</span>
+      </a>
+      <div class="sh-links">
+        <a href="https://www.belvederelabs.ai/project-analyzer" class="sh-link">SysML Repo Modeler</a>
+        <a href="https://www.belvederelabs.ai/flue-analyst" class="sh-link">Flue Analyst</a>
+        <a href="https://www.belvederelabs.ai/outliers" class="sh-link">Outliers</a>
+        <a href="https://www.belvederelabs.ai/forecast-explorer" class="sh-link">Forecast Explorer</a>
+        <a href="https://www.belvederelabs.ai/midterm-ledger" class="sh-link on" aria-current="page">Midterm Ledger</a>
+        <a href="https://clearfracture.ai" class="sh-link">Clear Fracture</a>
+      </div>
+      <button type="button" class="sh-menu" id="shMenu" aria-label="Open menu" aria-expanded="false" aria-controls="shSheet">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
+      </button>
+    </div>
+    <div class="sh-sheet" id="shSheet" hidden>
+      <a href="https://www.belvederelabs.ai/project-analyzer" class="sh-link">SysML Repo Modeler</a>
+      <a href="https://www.belvederelabs.ai/flue-analyst" class="sh-link">Flue Analyst</a>
+      <a href="https://www.belvederelabs.ai/outliers" class="sh-link">Outliers</a>
+      <a href="https://www.belvederelabs.ai/forecast-explorer" class="sh-link">Forecast Explorer</a>
+      <a href="https://www.belvederelabs.ai/midterm-ledger" class="sh-link on" aria-current="page">Midterm Ledger</a>
+      <a href="https://clearfracture.ai" class="sh-link">Clear Fracture</a>
+    </div>
+  </nav>
+</header>
+<script>
+/* Mobile menu for the Labs header. */
+(() => {
+  const btn = document.getElementById("shMenu"), sheet = document.getElementById("shSheet");
+  const OPEN = '<path d="M4 6h16M4 12h16M4 18h16"/>', CLOSE = '<path d="M18 6 6 18M6 6l12 12"/>';
+  btn.onclick = () => {
+    const open = sheet.hidden;
+    sheet.hidden = !open;
+    btn.setAttribute("aria-expanded", String(open));
+    btn.setAttribute("aria-label", open ? "Close menu" : "Open menu");
+    btn.querySelector("svg").innerHTML = open ? CLOSE : OPEN;
+  };
+})();
+</script>
 <div class="wrap">
   <header class="top">
     <div class="eyebrow">2026 midterms · Polls, prediction markets and results · Results as of Nov 5, 2026</div>
@@ -307,6 +375,7 @@ svg text { font-family: var(--f-mono); }
       <p><strong>Wallets.</strong> Polymarket's public trade feed lists the wallet on each side of every fill, makers and takers. The charts count purchases made through 11:59 pm ET on Nov 2 and value each at its purchase price against the final outcome. Later trades are excluded: including them makes large wallets look skilled, because they bought winners after results came in. A wallet is not a person, and one election's returns mostly reflect the shock itself.</p>
       <p><strong>About this page.</strong> Belvedere Labs is not affiliated with or endorsed by Polymarket. This page is for information only. It is not investment or trading advice, and the figures may contain errors.</p>
     </div>
+    <p class="byline">A Belvedere Labs project from <a href="https://clearfracture.ai">Clear Fracture</a>.</p>
   </section>
 </div>
 <div class="tip" id="tip" hidden></div>

@@ -23,6 +23,7 @@ const html = `<!doctype html>
 <meta property="og:description" content="${DESC}">
 <meta property="og:url" content="${URL}">
 <meta name="twitter:card" content="summary">
+<link rel="icon" href="https://www.belvederelabs.ai/belvedere.png" type="image/png">
 ${headPart}
 </head>
 <body>
