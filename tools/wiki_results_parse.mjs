@@ -42,6 +42,14 @@ function templates(text) { // top-level {{...}} templates in order
   return out;
 }
 const clean = (s) => (s || '').replace(/<ref[^>]*\/>/g, '').replace(/<ref[\s\S]*?<\/ref>/g, '').replace(/\{\{[^{}]*\}\}/g, '').replace(/\[\[(?:[^|\]]*\|)?([^\]]*)\]\]/g, '$1').replace(/'''?/g, '').replace(/<[^>]+>/g, '').trim();
+// A ticket row names the governor first, then the running mate, either as {{ubl|A|B}} or as A<br />B.
+// clean() would drop the template entirely or run the two names together, so keep only the first name.
+const ticketHead = (s) => {
+  let v = s || '';
+  const m = v.match(/^\s*\{\{\s*(?:ubl|unbulleted list|plainlist)\s*\|([\s\S]*)\}\}\s*$/i);
+  if (m) v = m[1].replace(/\[\[[^\]]*\]\]/g, (l) => l.replace(/\|/g, '\u0001')).split('|')[0].replace(/\u0001/g, '|');
+  return v.split(/<br\s*\/?>/i)[0];
+};
 const num = (s) => { const v = parseFloat(clean(s).replace(/[,%\s]/g, '')); return Number.isFinite(v) ? v : null; };
 function partyCode(p) {
   const s = clean(p).toLowerCase();
@@ -68,7 +76,7 @@ for (const race of RACES) {
       const name = t.split('|')[0].trim().toLowerCase();
       if (!/^election box (winning )?candidate/.test(name)) continue;
       const p = params(t);
-      rec.candidates.push({ name: clean(p.candidate), party: partyCode(p.party), partyRaw: clean(p.party), votes: num(p.votes), share: num(p.percentage), winner: name.startsWith('election box winning') });
+      rec.candidates.push({ name: clean(ticketHead(p.candidate)), party: partyCode(p.party), partyRaw: clean(p.party), votes: num(p.votes), share: num(p.percentage), winner: name.startsWith('election box winning') });
     }
     const winners = rec.candidates.filter((c) => c.winner);
     rec.callStatus = winners.length === 1 ? 'called' : 'uncalled';
@@ -87,7 +95,7 @@ for (const race of RACES) {
     for (let k = 1; k <= 6; k++) {
       const nm = ib['nominee' + k] ?? ib['candidate' + k];
       if (!nm) continue;
-      ibc.push({ name: clean(nm), party: partyCode(ib['party' + k]), partyRaw: clean(ib['party' + k]), votes: num(ib['popular_vote' + k] || ''), share: num(ib['percentage' + k] || ''), bold: /'''/.test(nm) });
+      ibc.push({ name: clean(ticketHead(nm)), party: partyCode(ib['party' + k]), partyRaw: clean(ib['party' + k]), votes: num(ib['popular_vote' + k] || ''), share: num(ib['percentage' + k] || ''), bold: /'''/.test(nm) });
     }
     rec.reporting = num(ib.reporting || '');
     rec.declaredWinner = clean(ib.after_election || '') || null;

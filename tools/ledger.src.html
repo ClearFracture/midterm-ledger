@@ -883,5 +883,11 @@ body { padding-top: 4rem; }
   onResize($('#pooled'), renderPooled);
   onResize($('#strip'), renderStrip);
   window.addEventListener('scroll', hideTip, { passive: true });
+  // A link to a race (for example #senateks) opens its sheet. Scroll to it once the map and fonts have
+  // settled, since both change the height of everything above it.
+  if (byId[fromHash]) {
+    const loaded = document.readyState === 'complete' ? Promise.resolve() : new Promise((ok) => window.addEventListener('load', ok, { once: true }));
+    Promise.all([loaded, document.fonts ? document.fonts.ready : null]).then(() => requestAnimationFrame(() => $('#sheet').scrollIntoView({ block: 'start' })));
+  }
 })();
 </script>
